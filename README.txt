@@ -1,1 +1,1 @@
-Ginideach Bender: green Next button centered on cartoon, and live streak count covers fixed 3/5/10 labels in the illustrations. The first toast illustration retains its original Right! lettering.
+Ginideach Bender — Fallen Edition. Correct answers show the matching pub cartoon with a green Next button. Wrong answers show the fallen pub character with a green Restart button. Both answer states hide the prompt and show only the dictionary and corpus example box, plus cartoon. Upload all files together to GitHub Pages.
