@@ -50,11 +50,11 @@
 .milestone-banner{background:#fff1c7;border:2px solid #d3aa44;border-radius:14px;padding:12px;text-align:center;font-weight:900}
 .ending-frame{overflow:hidden}.ending-frame img{aspect-ratio:2.7;object-fit:cover}.ending-button{display:block;margin:14px auto;background:#087e31;color:white;font-weight:900;padding:12px 30px;border-radius:14px}
 #celebrationText{font-size:clamp(21px,5vw,31px);text-align:center}
-</style></head><body>
+.life-tracker{text-align:center;font-size:clamp(20px,5vw,30px);font-weight:900;margin:12px auto;color:#8c1c21}.comic-frame img{max-height:340px;object-fit:contain}.reward-image{width:min(100%,460px);max-height:250px;object-fit:contain;border:3px solid #d3aa44;border-radius:16px;display:block;margin:12px auto}.reward-note{text-align:center;font-weight:900;color:#12682d;font-size:1.15rem}</style></head><body>
 <header><div class="brand"><div class="mark">F</div><div><h1>Ginideach Bender</h1><span class="record-badge">🏆 Record: <b id="bestScore">0</b></span></div></div></header>
 <main>
 <div id="streakTracker" class="streak-tracker" aria-live="polite"><span class="streak-stars" aria-hidden="true">✦ ⭐ ✨</span><strong id="streakCount">Ar aghaidh linn!</strong><span class="streak-stars" aria-hidden="true">✨ ⭐ ✦</span></div>
-<section id="bonus" class="hidden" aria-live="polite"><h2>Ceist bhreise · Bonus question</h2><p>Is the noun masculine or feminine?</p><h2 id="bonusWord"></h2><div class="gender-choices"><button type="button" class="gender-choice" data-gender="m"><img src="./bonus_man.webp" alt="Man telling a story in the pub"><span>Firinscneach</span></button><button type="button" class="gender-choice" data-gender="f"><img src="./bonus_women.webp" alt="Two women chatting at the bar"><span>Baininscneach</span></button></div><p id="bonusResult"></p><button id="bonusContinue" class="hidden" type="button">Continue</button></section><section id="celebration" class="celebration hidden" role="status" aria-live="polite"><div id="celebrationArt" class="celebration-art"></div><h2 id="celebrationText"></h2><p id="celebrationSub"></p></section><section id="quiz"><div class="word"><h2 id="lemma"></h2></div>
+<div id="lifeTracker" class="life-tracker" aria-live="polite">❤️ ❤️ ❤️ · 3 lives</div><section id="bonus" class="hidden" aria-live="polite"><h2>Ceist bhreise · Bonus question</h2><p>Is the noun masculine or feminine?</p><h2 id="bonusWord"></h2><div class="gender-choices"><button type="button" class="gender-choice" data-gender="m"><img src="./bonus_man.webp" alt="Man telling a story in the pub"><span>Firinscneach</span></button><button type="button" class="gender-choice" data-gender="f"><img src="./bonus_women.webp" alt="Two women chatting at the bar"><span>Baininscneach</span></button></div><p id="bonusResult"></p><button id="bonusContinue" class="hidden" type="button">Continue</button></section><section id="celebration" class="celebration hidden" role="status" aria-live="polite"><div id="celebrationArt" class="celebration-art"></div><h2 id="celebrationText"></h2><p id="celebrationSub"></p></section><section id="quiz"><div class="word"><h2 id="lemma"></h2></div>
 
 <form id="answerForm"><label class="answer-instruction" id="answerInstruction" for="answer">Cuir sa <span class="mode-name">Tuiseal Ginideach</span></label><input id="answer" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Freagra Anseo" aria-label="Your Irish answer" required><div class="accents" aria-label="Irish accented letters"><button type="button" data-accent="á">á</button><button type="button" data-accent="é">é</button><button type="button" data-accent="í">í</button><button type="button" data-accent="ó">ó</button><button type="button" data-accent="ú">ú</button></div><button id="check" type="submit">Check</button></form><section id="feedback" class="card hidden" aria-live="polite"></section></section>
 
@@ -65,11 +65,12 @@ const words=[{"w":"am","gen":["ama"],"pl":["amanna"],"url":"https://www.teanglan
 const $=id=>document.getElementById(id);
 const savedBest=()=>{try{return Number(localStorage.getItem("focalFosBest275")||0)}catch{return 0}};
 const saveBest=x=>{try{localStorage.setItem("focalFosBest275",String(x))}catch{}};
-let streak=0,best=savedBest(),correct=0,answered=0,deck=[],cursor=0,mode="mixed",type="gen",done=false,failed=false,bonusPending=false,bonusShown=false,finished=false;
+let lives=3,correctRun=0,mistakeCount=0,rewardImage="",rewardMessage="";let streak=0,best=savedBest(),correct=0,answered=0,deck=[],cursor=0,mode="mixed",type="gen",done=false,failed=false,bonusPending=false,bonusShown=false,finished=false;
 function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function normal(s){return s.trim().toLocaleLowerCase("ga-IE").normalize("NFC").replace(/\s+/g," ")}
 function refreshStats(){
- $("streakCount").textContent=streak===0&&!failed?"Ar aghaidh linn!":failed?`You got ${streak} in a row!`:`${streak} in a row!`;
+ $("lifeTracker").textContent="❤️ ".repeat(lives)+"🖤 ".repeat(3-Math.min(lives,3))+` · ${lives} ${lives===1?"life":"lives"}`;
+ $("streakCount").textContent=streak===0?"Ar aghaidh linn!":`${streak} correct answers!`;
  $("bestScore").textContent=best;
  const tracker=$("streakTracker");tracker.classList.remove("streak-pop");void tracker.offsetWidth;tracker.classList.add("streak-pop");
 }
@@ -81,7 +82,7 @@ function newGame(){
  deck=other.slice(0,30-priorityIds.length);
  const slots=shuffle([...Array(30).keys()]).slice(0,priorityIds.length).sort((a,b)=>a-b);
  slots.forEach((slot,i)=>deck.splice(slot,0,priorityIds[i]));
- deck=deck.concat(other.slice(30-priorityIds.length));cursor=0;answered=0;correct=0;streak=0;failed=false;finished=false;bonusPending=false;bonusShown=false;
+ deck=deck.concat(other.slice(30-priorityIds.length));cursor=0;answered=0;correct=0;streak=0;lives=3;correctRun=0;mistakeCount=0;rewardImage="";rewardMessage="";failed=false;finished=false;bonusPending=false;bonusShown=false;
  $("bonus").classList.add("hidden");$("celebration").classList.add("hidden");refreshStats();pick();
 }
 function currentWord(){return words[deck[cursor]]}
@@ -94,15 +95,7 @@ function showCorpusExample(w){
  if(!ex){p.textContent="No sourced example available for this noun.";p.className="unverified";return;}
  p.className="";
  const sentence=document.createElement("span");sentence.textContent=ex.sentence;p.append(sentence);
- if(formEx){
-  const note=document.createElement("small");note.style.display="block";note.style.marginTop="5px";
-  note.textContent=ex.source==="User-supplied sentence"?"":"Published grammar example for this form (phrase, not necessarily a full sentence). ";p.append(note);
-  if(ex.url){const a=document.createElement("a");a.href=ex.url;a.target="_blank";a.rel="noopener noreferrer";a.textContent="Source: Foclóir.ie ↗";note.append(a)}
- }else{
-  const note=document.createElement("small");note.style.display="block";note.style.marginTop="5px";
-  note.textContent="";p.append(note);
-  if(ex.url){const a=document.createElement("a");a.href=ex.url;a.target="_blank";a.rel="noopener noreferrer";a.textContent="Source ↗";note.append(a)}
- }
+
 }
 function pick(){
  $("bonus").classList.add("hidden");$("quiz").classList.remove("answered");$("answerForm").append($("check"));$("check").classList.remove("comic-action");
@@ -149,21 +142,29 @@ function showCelebration(valid){
  const c=$("celebration"),art=$("celebrationArt");
  c.className="celebration "+(valid&&streak>=5?"special":"regular");
  const frame=document.createElement("div");frame.className="comic-frame";
- const img=document.createElement("img");img.src=valid?"./"+adventureArt(streak):"./comic_fallen.webp";
- img.alt=valid?"The four friends on their illustrated pub adventure":"The man passed out on the pub floor";
+ const img=document.createElement("img");
+ const errors=["mistake_barman.webp","mistake_stool.webp","mistake_sick.webp","mistake_slap.webp"];
+ img.src=valid?"./"+adventureArt(streak):"./"+(lives<=0?"comic_fallen.webp":errors[(mistakeCount-1)%4]);
+ img.alt=valid?"The four friends enjoying their illustrated pub adventure":lives<=0?"The man passed out on the pub floor":"A humorous pub mishap after a wrong answer";
  frame.append(img);
- if(valid&&streak>=3){const count=document.createElement("div");count.className="comic-live-count";count.textContent=streak+" in a row!";frame.append(count)}
- const btn=$("check");btn.className="comic-action";btn.textContent=valid?(streak>=100?"Finish":"Next"):"Restart";frame.append(btn);
+ if(valid&&streak>=3){const count=document.createElement("div");count.className="comic-live-count";count.textContent=streak+" correct answers!";frame.append(count)}
+ const btn=$("check");btn.className="comic-action";btn.textContent=lives<=0?"Play again":valid&&streak>=100?"Finish":"Next";frame.append(btn);
  art.replaceChildren(frame);
- const msg=valid?milestoneText(streak):"";
+ if(rewardImage&&valid){const pic=document.createElement("img");pic.className="reward-image";pic.src="./"+rewardImage;pic.alt=rewardMessage;art.append(pic);const note=document.createElement("p");note.className="reward-note";note.textContent=rewardMessage;art.append(note)}
+ const msg=valid?milestoneText(streak):lives<=0?"No lives left — the bender is over!":`Ouch! ${lives} ${lives===1?"life":"lives"} left. Your progress is safe.`;
  if(msg){const banner=document.createElement("p");banner.className="milestone-banner";banner.textContent=msg;art.append(banner)}
  $("celebrationText").textContent="";$("celebrationSub").textContent="";
 }
 $("answerForm").addEventListener("submit",e=>{
  e.preventDefault();if(done)return;
  const w=currentWord(),valid=w[type].some(x=>normal(x)===normal($("answer").value));
- done=true;answered++;failed=!valid;
- if(valid){correct++;streak++;if(streak>best){best=streak;saveBest(best)}} // Keep the achieved streak visible on failure until Restart is pressed.
+ done=true;answered++;failed=!valid;rewardImage="";rewardMessage="";
+ if(valid){
+ correct++;streak++;correctRun++;
+ if(streak>best){best=streak;saveBest(best)}
+ if(correctRun%4===0){lives++;rewardImage="reward_pint.webp";rewardMessage="🍺 Four correct in a row! The barman pours you a pint — +1 life!"}
+}else{lives=Math.max(0,lives-1);correctRun=0;mistakeCount++;}
+ // Mistakes cost a life but never reset adventure progress.
  refreshStats();$("answer").disabled=true;$("check").disabled=false;$("check").type="button";
  const box=$("feedback");box.className="card"+(valid?"":" wrong");box.replaceChildren();
  const summary=document.createElement("div");summary.className="dictionary-summary";
@@ -184,12 +185,13 @@ $("answerForm").addEventListener("submit",e=>{
  const example=document.createElement("p");example.className="answer-example";example.id="corpusSentence";summary.append(example);showCorpusExample(w);
  $("quiz").classList.add("answered");showCelebration(valid);
 });
-$("check").addEventListener("click",()=>{if(!done)return;if(failed)newGame();else if(streak>=100){finished=true;showEnding()}else{cursor++;if(answered%4===0)showBonus();else pick()}});$("restart").addEventListener("click",newGame);$("mode").addEventListener("change",newGame);$("dictionary").addEventListener("click",()=>{const w=currentWord();if(w)window.open(w.url,"_blank","noopener,noreferrer")});
+$("check").addEventListener("click",()=>{if(!done)return;if(lives<=0)newGame();else if(streak>=100){finished=true;showEnding()}else{cursor++;if(answered%4===0)showBonus();else pick()}});$("restart").addEventListener("click",newGame);$("mode").addEventListener("change",newGame);$("dictionary").addEventListener("click",()=>{const w=currentWord();if(w)window.open(w.url,"_blank","noopener,noreferrer")});
 document.querySelectorAll("[data-gender]").forEach(b=>b.addEventListener("click",()=>{
  const ok=b.dataset.gender===currentWord().gender;
  document.querySelectorAll("[data-gender]").forEach(x=>x.disabled=true);
- if(ok){streak++;if(streak>best){best=streak;saveBest(best)}}
- refreshStats();$("bonusResult").textContent=ok?"Correct! +1 to your streak.":"Not quite! The answer is "+(currentWord().gender==="m"?"firinscneach (m).":"baininscneach (f).")+" Your streak stays safe.";
+ if(ok){lives++;}
+ refreshStats();$("bonusResult").textContent=ok?"Inscne Ceart! +1 life — and a free drink!":"Not quite! The answer is "+(currentWord().gender==="m"?"firinscneach (m).":"baininscneach (f).")+" No life lost.";
+ if(ok){const pic=document.createElement("img");pic.className="reward-image";pic.src="./"+(currentWord().gender==="m"?"reward_man.webp":"reward_women.webp");pic.alt=currentWord().gender==="m"?"A man buys him a pint":"Two women buy him a pint";$("bonusResult").append(pic)}
  $("bonusContinue").classList.remove("hidden");
 }));
 $("bonusContinue").addEventListener("click",()=>{if(streak>=100)showEnding();else{cursor++;pick()}});
@@ -202,7 +204,7 @@ function showEnding(){
  const img=document.createElement("img");img.src="./story_final.webp";img.alt="The four friends and angels in a heavenly celebration, sharing drinks beneath the stars";frame.append(img);
  art.append(frame);
  $("celebrationText").textContent="🍀 Ginideach Bender na Neimhe bainte amach.";
- $("celebrationSub").textContent="100 in a row! An turas críochnaithe!";
+ $("celebrationSub").textContent="100 correct answers! An turas críochnaithe!";
  const b=document.createElement("button");b.textContent="Play again";b.className="ending-button";b.onclick=newGame;art.append(b);
 }
 $("report").addEventListener("click",()=>{
